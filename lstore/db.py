@@ -1,7 +1,7 @@
 from lstore.table import Table
 
 class Database():
-
+    # test comment
     def __init__(self):
         self.tables = []
         pass
