@@ -10,6 +10,7 @@ class Database():
     def open(self, path):
         pass
 
+    # #
     def close(self):
         pass
 
