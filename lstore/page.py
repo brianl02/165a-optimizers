@@ -1,22 +1,30 @@
+PAGE_SIZE = 4096
+COLUMN_ENTRY_SIZE = 8
 
 class Page:
-
-    # variable for page size so it can be changed for optimization
-    # each column entry is 8 bytes, keep another constant variable for that
 
     def __init__(self):
         self.num_records = 0
         self.data = bytearray(4096)
 
     def has_capacity(self):
-        # given page size, calculate with record size max number of records
-        # check num_records
-        # return true/false
-        pass
+        max_records = PAGE_SIZE // COLUMN_ENTRY_SIZE
+        return self.num_records < max_records
 
     def write(self, value):
+        if not self.has_capacity():
+            return False
+        offset = self.num_records * COLUMN_ENTRY_SIZE
+        value_in_bytes = value.to_bytes(8, byteorder='little')
+        self.data[offset : offset + 8] = value_in_bytes
         self.num_records += 1
-        # calculate the offset needed to append to end of page
-        # write value into data at offset
-        pass
+        return True
+    
+    def read(self, index):
+        if index >= self.num_records:
+            return None
+        start_offset = index * COLUMN_ENTRY_SIZE
+        end_offset = start_offset + COLUMN_ENTRY_SIZE
+        value_in_bytes = self.data[start_offset:end_offset]
+        return int.from_bytes(value_in_bytes, byteorder='little')
 
