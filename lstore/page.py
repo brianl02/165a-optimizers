@@ -1,5 +1,6 @@
 PAGE_SIZE = 4096
 COLUMN_ENTRY_SIZE = 8
+MAX_RECORDS_PER_PAGE = PAGE_SIZE // COLUMN_ENTRY_SIZE
 
 class Page:
 
@@ -8,8 +9,7 @@ class Page:
         self.data = bytearray(4096)
 
     def has_capacity(self):
-        max_records = PAGE_SIZE // COLUMN_ENTRY_SIZE
-        return self.num_records < max_records
+        return self.num_records < MAX_RECORDS_PER_PAGE
 
     def write(self, value):
         if not self.has_capacity():

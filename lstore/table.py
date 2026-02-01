@@ -1,13 +1,12 @@
 from lstore.index import Index
 from time import time
 
-INDIRECTION_COLUMN = 0
-RID_COLUMN = 1
-TIMESTAMP_COLUMN = 2
-SCHEMA_ENCODING_COLUMN = 3
+RID_COLUMN = 0
+INDIRECTION_COLUMN = 1
+# TIMESTAMP_COLUMN = 2
+SCHEMA_ENCODING_COLUMN = 2
 
-# variable for size of page range that can be changed for optimization
-
+PAGE_RANGE_SIZE = 64000
 
 class Record:
 
@@ -30,24 +29,26 @@ class Table:
         self.page_directory = {}
         self.index = Index(self)
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
-        # variable for list of page ranges
-        # create first page range
-        pass
+        self.page_range_directory = {}
+
+    def add_page_range(self, page_range_number):
+        self.page_range_directory = PageRange(page_range_number, self)
 
     def __merge(self):
         print("merge is happening")
         pass
 
-    # class Table should have functions for adding to PageRange, reading PageRange, etc.
- 
- # class PageRange (each holds base pages for specific range of rows and their corresponding tail pages)
- 
-    # init function (accepts number of columns and range of records it holds)
-    # set range variable
-    # create 2d array for base pages, init with one base page per column
-    # create 2d array for tail pages, init empty
-    # num records tracker
 
-    # has_capacity function
+class PageRange:
 
+    def __init__(self, page_range_number, table):
+        self.table = table
+        self.start_key = page_range_number * PAGE_RANGE_SIZE
+        self.end_key = (page_range_number + 1) * PAGE_RANGE_SIZE 
+        self.base_records = []
+        self.tail_records = []
+        self.base_pages = [[] for _ in range(table.num_columns + 3)]
+        self.tail_pages = [[] for _ in range(table.num_columns + 3)]
+        self.base_page_count = 0
+        self.tail_page_count = 0
 
