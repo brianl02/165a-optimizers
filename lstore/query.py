@@ -1,3 +1,4 @@
+from lstore import table
 from lstore.table import Table, Record
 from lstore.index import Index
 
@@ -68,7 +69,7 @@ class Query:
     """
     def update(self, primary_key, *columns):
         pass
-
+        
     
     """
     :param start_range: int         # Start of the key range to aggregate 
