@@ -32,7 +32,7 @@ class Table:
         self.page_range_directory = {}
 
     def add_page_range(self, page_range_number):
-        self.page_range_directory = PageRange(page_range_number, self)
+        self.page_range_directory[page_range_number] = PageRange(page_range_number, self)
 
     def __merge(self):
         print("merge is happening")
@@ -47,8 +47,29 @@ class PageRange:
         self.end_key = (page_range_number + 1) * PAGE_RANGE_SIZE 
         self.base_records = []
         self.tail_records = []
+        self.base_records_count = 0
+        self.tail_records_count = 0
         self.base_pages = [[] for _ in range(table.num_columns + 3)]
         self.tail_pages = [[] for _ in range(table.num_columns + 3)]
         self.base_page_count = 0
         self.tail_page_count = 0
+
+    def add_record(self, record, is_base):
+        if is_base:
+            self.base_records.append(record)
+            self.base_records_count += 1
+        else:
+            self.tail_records.append(record)
+            self.tail_records_count += 1
+
+    def add_page(self, is_base, column_index, page):
+        if is_base:
+            self.base_pages[column_index].append(page)
+            self.base_page_count += 1
+        else:
+            self.tail_pages[column_index].append(page)
+            self.tail_page_count += 1
+
+    
+
 
