@@ -1,5 +1,7 @@
 from lstore.index import Index
 from time import time
+from dataclasses import dataclass
+from typing import List, Tuple
 
 RID_COLUMN = 0
 INDIRECTION_COLUMN = 1
@@ -7,6 +9,11 @@ INDIRECTION_COLUMN = 1
 SCHEMA_ENCODING_COLUMN = 2
 
 PAGE_RANGE_SIZE = 64000
+
+@dataclass
+class PageDirectoryEntry:
+    page_range_number: int
+    data_locations: List[Tuple[int, int]] 
 
 class Record:
 
@@ -34,6 +41,9 @@ class Table:
     def add_page_range(self, page_range_number):
         self.page_range_directory[page_range_number] = PageRange(page_range_number, self)
 
+    def get_data_locations(self, rid):
+        pass
+
     def __merge(self):
         print("merge is happening")
         pass
@@ -44,7 +54,7 @@ class PageRange:
     def __init__(self, page_range_number, table):
         self.table = table
         self.start_key = page_range_number * PAGE_RANGE_SIZE
-        self.end_key = (page_range_number + 1) * PAGE_RANGE_SIZE 
+        self.end_key = (page_range_number + 1) * PAGE_RANGE_SIZE - 1
         self.base_records = {}
         self.tail_records = {}
         self.base_records_count = 0
