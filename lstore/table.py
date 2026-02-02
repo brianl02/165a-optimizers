@@ -45,8 +45,8 @@ class PageRange:
         self.table = table
         self.start_key = page_range_number * PAGE_RANGE_SIZE
         self.end_key = (page_range_number + 1) * PAGE_RANGE_SIZE 
-        self.base_records = []
-        self.tail_records = []
+        self.base_records = {}
+        self.tail_records = {}
         self.base_records_count = 0
         self.tail_records_count = 0
         self.base_pages = [[] for _ in range(table.num_columns + 3)]
@@ -56,10 +56,10 @@ class PageRange:
 
     def add_record(self, record, is_base):
         if is_base:
-            self.base_records.append(record)
+            self.base_records[record.rid] = record
             self.base_records_count += 1
         else:
-            self.tail_records.append(record)
+            self.tail_records[record.rid] = record
             self.tail_records_count += 1
 
     def add_page(self, is_base, column_index, page):
