@@ -3,17 +3,24 @@ from time import time
 from dataclasses import dataclass
 from typing import List, Tuple
 
+from lstore.page import Page
+
 RID_COLUMN = 0
 INDIRECTION_COLUMN = 1
 # TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 2
 
-PAGE_RANGE_SIZE = 64000
+NUM_RECORDS_PER_BASE_TAIL = Page.MAX_RECORDS_PER_PAGE
+NUM_BASE_PER_RANGE = 16
+NUM_RECORDS_PER_RANGE = NUM_BASE_PER_RANGE * NUM_RECORDS_PER_BASE_TAIL
 
-@dataclass
-class PageDirectoryEntry:
-    page_range_number: int
-    data_locations: List[Tuple[int, int]] 
+
+# @dataclass
+# class PageDirectoryEntry:
+#     page_range_number: int
+#     in_base_page: bool
+#     base_tail_page_number: int
+#     data_locations: List[Tuple[int, int]] 
 
 class Record:
 
@@ -36,50 +43,70 @@ class Table:
         self.page_directory = {}
         self.index = Index(self)
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
-        self.page_range_directory = {}
+        self.page_ranges = []
+        self.num_page_ranges = 1 
+        self.add_page_range()
 
-    def add_page_range(self, page_range_number):
-        self.page_range_directory[page_range_number] = PageRange(page_range_number, self)
+    def add_page_range(self):
+        self.page_ranges.append(PageRange(self, self.num_page_ranges))
+        self.num_page_ranges += 1 
 
-    def get_data_locations(self, rid):
-        pass
+    def get_last_page_range(self):
+        return self.page_ranges[-1]
+
+    def get_next_record_location(self, is_base): 
+        if is_base:
+            pass
+        else:
+            pass
 
     def __merge(self):
         print("merge is happening")
         pass
-
+ 
 
 class PageRange:
 
-    def __init__(self, page_range_number, table):
+    def __init__(self, table, page_range_number):
         self.table = table
-        self.start_key = page_range_number * PAGE_RANGE_SIZE
-        self.end_key = (page_range_number + 1) * PAGE_RANGE_SIZE - 1
-        self.base_records = {}
-        self.tail_records = {}
-        self.base_records_count = 0
-        self.tail_records_count = 0
-        self.base_pages = [[] for _ in range(table.num_columns + 3)]
-        self.tail_pages = [[] for _ in range(table.num_columns + 3)]
-        self.base_page_count = 0
-        self.tail_page_count = 0
-
-    def add_record(self, record, is_base):
-        if is_base:
-            self.base_records[record.rid] = record
-            self.base_records_count += 1
-        else:
-            self.tail_records[record.rid] = record
-            self.tail_records_count += 1
-
-    def add_page(self, is_base, column_index, page):
-        if is_base:
-            self.base_pages[column_index].append(page)
-            self.base_page_count += 1
-        else:
-            self.tail_pages[column_index].append(page)
-            self.tail_page_count += 1
-
+        self.page_range_number = page_range_number
+        self.base_pages = []
+        self.tail_pages = []
+        self.num_base_pages = 0
+        self.num_tail_pages = 0
+        self.add_base_tail_page(True)
+        self.add_base_tail_page(False)
     
+    def add_base_tail_page(self, is_base):
+        if is_base and not self.has_capacity():
+            return False 
+        if is_base:
+            self.base_pages.append(BaseTailPage(True, self.num_base_pages, self, self.table))
+            self.num_base_pages += 1
+        else:
+            self.tail_pages.append(BaseTailPage(False, self.num_tail_pages, self, self.table))
+            self.num_tail_pages += 1
+        return True
+    
+    def get_last_base_page(self):
+        return self.base_pages[-1]
+    
+    def has_capacity(self):
+        return self.num_base_pages < NUM_BASE_PER_RANGE
+        
+
+class BaseTailPage:
+
+    def __init__(self, is_base, page_number, page_range, table):
+        self.is_base = is_base
+        self.page_number = page_number
+        self.page_range = page_range
+        self.table = table
+        self.pages = [Page() for _ in range(table.num_columns + 3)]
+        self.num_records = 0
+
+    def has_capacity(self):
+        return self.num_records < NUM_RECORDS_PER_BASE_TAIL
+
 
 
