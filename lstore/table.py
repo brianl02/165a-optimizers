@@ -103,20 +103,20 @@ class Table:
         return
      
     def construct_full_record(self, rid, relative_version=0):
-        page_directory_entry = self.page_directory[rid]
-        page_range_number = page_directory_entry.page_range_number
-        is_base = page_directory_entry.is_base
-        data_locations = page_directory_entry.data_locations
-        page_range = self.page_range_directory[page_range_number]
+        base_page_directory_entry = self.page_directory[rid]
+        base_page_range_number = base_page_directory_entry.page_range_number
+        # is_base = base_page_directory_entry.is_base
+        base_data_locations = base_page_directory_entry.data_locations
+        base_page_range = self.page_range_directory[base_page_range_number]
 
-        base_rid_page_number = data_locations[RID_COLUMN].page_number
-        base_rid_offset = data_locations[RID_COLUMN].offset
-        base_rid_page = page_range.base_pages[RID_COLUMN][base_rid_page_number]
+        base_rid_page_number = base_data_locations[RID_COLUMN].page_number
+        base_rid_offset = base_data_locations[RID_COLUMN].offset
+        base_rid_page = base_page_range.base_pages[RID_COLUMN][base_rid_page_number]
         base_rid = base_rid_page.read(base_rid_offset // page.COLUMN_ENTRY_SIZE)
 
-        indirection_rid_page_number = data_locations[INDIRECTION_COLUMN].page_number
-        indirection_rid_offset = data_locations[INDIRECTION_COLUMN].offset
-        indirection_rid_page = page_range.base_pages[INDIRECTION_COLUMN][indirection_rid_page_number]
+        indirection_rid_page_number = base_data_locations[INDIRECTION_COLUMN].page_number
+        indirection_rid_offset = base_data_locations[INDIRECTION_COLUMN].offset
+        indirection_rid_page = base_page_range.base_pages[INDIRECTION_COLUMN][indirection_rid_page_number]
         indirection_rid = indirection_rid_page.read(indirection_rid_offset // page.COLUMN_ENTRY_SIZE)
 
         columns = [None] * self.num_columns
@@ -135,7 +135,7 @@ class Table:
             indirection_rid_page_number = current_data_locations[INDIRECTION_COLUMN].page_number
             indirection_rid_offset = current_data_locations[INDIRECTION_COLUMN].offset
 
-            indirection_rid_page = page_range.base_pages[INDIRECTION_COLUMN][indirection_rid_page_number]
+            indirection_rid_page = current_page_range.base_pages[INDIRECTION_COLUMN][indirection_rid_page_number]
             indirection_rid = indirection_rid_page.read(indirection_rid_offset // page.COLUMN_ENTRY_SIZE)
 
             if version_num >= relative_version:
@@ -144,15 +144,16 @@ class Table:
             version_num += 1
         
         if indirection_rid == base_rid:
-            base_record = page_range.get_record(is_base=True, rid=base_rid)
+            base_record = base_page_range.get_record(is_base=True, rid=base_rid)
             base_columns = base_record.columns
             new_columns = [x if x is not None else y for x, y in zip(columns, base_columns)]
             columns = new_columns
         
-        return columns
+        return columns 
 
-    def get_column_value(self):
-        pass
+    def get_column_value(self, rid, column_number, relative_version=0):
+        full_record_columns = self.construct_full_record(rid, relative_version)
+        return full_record_columns[column_number]
 
     def __merge(self):
         print("merge is happening")

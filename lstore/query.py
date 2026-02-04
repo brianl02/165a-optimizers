@@ -57,7 +57,6 @@ class Query:
     def select(self, search_key, search_key_index, projected_columns_index):
         # using search key and search key index, get list of RIDs from index class
         # for loop that goes through each RID
-            # get page directory entry
             # call function in table to traverse backwards from latest tail record
             # for each value in projected columns index
                 # if 1, add item to new record object
@@ -79,7 +78,6 @@ class Query:
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
         # using search key and search key index, get list of RIDs from index class
         # for loop that goes through each RID
-            # get page directory entry
             # call function in table to traverse backwards from latest tail record, but specify relative version
             # for each value in projected columns index
                 # if 1, add item to new record object
@@ -120,7 +118,6 @@ class Query:
     def sum(self, start_range, end_range, aggregate_column_index):
         # for loop through every key in range
             # get RID from index (if no RID, continue)
-            # use RID to get page directory entry
             # call function in table that traverses backward till value found
             # if value not null, add to sum
         # if no records were found, return False
@@ -141,7 +138,6 @@ class Query:
         # check if no records in range, if so return False
         # for loop through every key in range
             # get RID from index (if no RID, continue)
-            # use RID to get page directory entry
             # call function in table that traverses backward till value found, specifying relative version
             # if value not null, add to sum
         pass
