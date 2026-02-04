@@ -37,7 +37,7 @@ class Query:
         # check if range exists, if not create it
         # create new record object with new RID
         # construct variable that holds all columns including metadata
-        # call add record in table function
+        # call add record in table class
         pass
 
     
@@ -74,6 +74,13 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
+        # use index to get RID of base record
+        # use page directory to get data locations of base record
+        # create new tail record object
+        # construct variable that holds all columns including metadata
+        # update indirection pointer and schema encoding of base record 
+        # call add record in table class 
+        # (note: if record is being updated for the first time, must add copy of base record as tail record)
         pass
         
     

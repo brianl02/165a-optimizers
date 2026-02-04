@@ -87,7 +87,7 @@ class Table:
         new_page_directory_entry = PageDirectoryEntry(page_range_number, is_base, new_record_data_locations)
         self.page_directory[record.rid] = new_page_directory_entry
         page_range.add_record(is_base, record)
-        # TODO update index
+        # TODO update index, waiting for code from index.py
         return
 
     def __merge(self):
