@@ -6,6 +6,7 @@ class Page:
 
     def __init__(self):
         self.num_records = 0
+        self.current_offset = 0
         self.data = bytearray(4096)
 
     def has_capacity(self):
@@ -16,8 +17,9 @@ class Page:
             return False
         offset = self.num_records * COLUMN_ENTRY_SIZE
         value_in_bytes = value.to_bytes(8, byteorder='little')
-        self.data[offset : offset + 8] = value_in_bytes
+        self.data[offset : offset + COLUMN_ENTRY_SIZE] = value_in_bytes
         self.num_records += 1
+        self.current_offset += COLUMN_ENTRY_SIZE
         return True
     
     def read(self, index):

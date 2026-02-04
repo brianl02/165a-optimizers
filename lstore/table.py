@@ -1,3 +1,4 @@
+from lstore import page
 from lstore.index import Index
 from time import time
 from dataclasses import dataclass
@@ -57,39 +58,53 @@ class Table:
         last_record = page_range.get_last_record(is_base)
         last_record_info = None
         last_record_data_locations = None
+
         if last_record is None:
             last_record_info = PageDirectoryEntry(page_range_number, is_base, [PageCoord(0, 0) for _ in range(self.num_columns + 3)])
         else:
             last_record_rid = last_record.rid
             last_record_info = self.page_directory[last_record_rid]
+
         last_record_data_locations = last_record_info.data_locations
+        
         if is_base:
             pages = page_range.base_pages
         else:
             pages = page_range.tail_pages
+
         new_record_data_locations = []
+
         for column_number in range(self.num_columns + 3):
+
             if all_columns[column_number] is None:
                 new_record_data_locations[column_number] = None
                 continue
+
             last_page = pages[column_number][-1]
-            last_record_page_number = last_record_data_locations[column_number].page_number
-            last_record_offset = last_record_data_locations[column_number].offset
+            last_record_page_number = pages[column_number].__len__() - 1
+            last_record_offset = pages[column_number][-1].current_offset
+
             if last_page.has_capacity():
-                new_page_coord = PageCoord(last_record_page_number, last_record_offset + 1)
+                new_page_coord = PageCoord(last_record_page_number, last_record_offset + page.COLUMN_ENTRY_SIZE)
+
             else:
                 page_range.add_page(is_base, column_number)
                 new_page_number = last_record_page_number + 1
                 new_page_coord = PageCoord(new_page_number, 0)
+
             new_record_data_locations[column_number] = new_page_coord
             page_to_write = pages[column_number][new_page_coord.page_number]
             page_to_write.write(all_columns[column_number])
+
         new_page_directory_entry = PageDirectoryEntry(page_range_number, is_base, new_record_data_locations)
         self.page_directory[record.rid] = new_page_directory_entry
         page_range.add_record(is_base, record)
         # TODO update index, waiting for code from index.py
         return
-
+    
+    def get_record_versions(self):
+        pass
+        
     def __merge(self):
         print("merge is happening")
         pass

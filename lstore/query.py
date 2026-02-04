@@ -22,6 +22,10 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
+        # use index to get RID of base record
+        # call the function in table to get a list of data locations for base record and all its tail records
+        # for the base record and all tail records, mark them as deleted by setting RID to special invalidation flag
+        # maybe: remove all references to that record so it can't be accessed anymore? (unsure, need to ask TA/professor)
         pass
     
     
