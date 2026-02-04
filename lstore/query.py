@@ -55,6 +55,14 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, search_key, search_key_index, projected_columns_index):
+        # using search key and search key index, get list of RIDs from index class
+        # for loop that goes through each RID
+            # get page directory entry
+            # call function in table to traverse backwards from latest tail record
+            # for each value in projected columns index
+                # if 1, add item to new record object
+                # if 0, skip
+            # add new record object to list
         pass
 
     
@@ -69,6 +77,14 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
+        # using search key and search key index, get list of RIDs from index class
+        # for loop that goes through each RID
+            # get page directory entry
+            # call function in table to traverse backwards from latest tail record, but specify relative version
+            # for each value in projected columns index
+                # if 1, add item to new record object
+                # if 0, skip
+            # add new record object to list 
         pass
 
     

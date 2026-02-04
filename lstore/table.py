@@ -102,17 +102,17 @@ class Table:
         # TODO update index, waiting for code from index.py
         return
     
-    def get_all_record_versions(self):
-        # make list of PageDirectoryEntries
-        # add PDE for base record to list
-        # extract RID of base record
-        # extract RID of most recent tail record from indirection pointer of base record
-        # while loop that loops till RID of record you are examining is base record
-            # get PDE of current record
-            # add PDE to list
-            # extract RID of next tail record from indirection pointer of current record
-        # return list of PDEs
-        pass
+    # def get_all_record_versions(self):
+    #     # make list of PageDirectoryEntries
+    #     # add PDE for base record to list
+    #     # extract RID of base record
+    #     # extract RID of most recent tail record from indirection pointer of base record
+    #     # while loop that loops till RID of record you are examining is base record
+    #         # get PDE of current record
+    #         # add PDE to list
+    #         # extract RID of next tail record from indirection pointer of current record
+    #     # return list of PDEs
+    #     pass
 
     def get_relative_version(self):
         pass
