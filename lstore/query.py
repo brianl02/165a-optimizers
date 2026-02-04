@@ -118,13 +118,12 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_range, end_range, aggregate_column_index):
-        # calculate page range numbers for start and end range
-        # check if no records in range, if so return False
         # for loop through every key in range
             # get RID from index (if no RID, continue)
             # use RID to get page directory entry
             # call function in table that traverses backward till value found
             # if value not null, add to sum
+        # if no records were found, return False
         pass
 
     

@@ -103,19 +103,52 @@ class Table:
         return
      
     def construct_full_record(self, rid, relative_version=0):
-        # get page directory entry from RID
-        # get location of RID from page directory entry, save as base RID
-        # get location of indirection from page directory entry, save
-        # while columns are not complete, or base record not reached
-            # if relative version hasn't been reached, continue without saving any info
-            # using rid, get record object
-            # from record object, get all columns
-            # using rid, get page directory entry
-            # get indirection pointer
-            # fill in null values with values from this record
-        # if base record was reached, use values from base record to fill in any remaining nulls
-        # return array of all column values
-        pass
+        page_directory_entry = self.page_directory[rid]
+        page_range_number = page_directory_entry.page_range_number
+        is_base = page_directory_entry.is_base
+        data_locations = page_directory_entry.data_locations
+        page_range = self.page_range_directory[page_range_number]
+
+        base_rid_page_number = data_locations[RID_COLUMN].page_number
+        base_rid_offset = data_locations[RID_COLUMN].offset
+        base_rid_page = page_range.base_pages[RID_COLUMN][base_rid_page_number]
+        base_rid = base_rid_page.read(base_rid_offset // page.COLUMN_ENTRY_SIZE)
+
+        indirection_rid_page_number = data_locations[INDIRECTION_COLUMN].page_number
+        indirection_rid_offset = data_locations[INDIRECTION_COLUMN].offset
+        indirection_rid_page = page_range.base_pages[INDIRECTION_COLUMN][indirection_rid_page_number]
+        indirection_rid = indirection_rid_page.read(indirection_rid_offset // page.COLUMN_ENTRY_SIZE)
+
+        columns = [None] * self.num_columns
+        version_num = 0
+
+        while indirection_rid != base_rid or any(value is None for value in columns):
+            record = page_range.get_record(is_base=False, rid=indirection_rid) 
+            current_columns = record.columns
+
+            current_page_directory_entry = self.page_directory[indirection_rid]
+            current_page_range_number = current_page_directory_entry.page_range_number
+            current_is_base = current_page_directory_entry.is_base
+            current_data_locations = current_page_directory_entry.data_locations
+            
+            indirection_rid_page_number = current_data_locations[INDIRECTION_COLUMN].page_number
+            indirection_rid_offset = current_data_locations[INDIRECTION_COLUMN].offset
+
+            indirection_rid_page = page_range.base_pages[INDIRECTION_COLUMN][indirection_rid_page_number]
+            indirection_rid = indirection_rid_page.read(indirection_rid_offset // page.COLUMN_ENTRY_SIZE)
+
+            if version_num >= relative_version:
+                new_columns = [x if x is not None else y for x, y in zip(columns, current_columns)]
+                columns = new_columns
+            version_num += 1
+        
+        if indirection_rid == base_rid:
+            base_record = page_range.get_record(is_base=True, rid=base_rid)
+            base_columns = base_record.columns
+            new_columns = [x if x is not None else y for x, y in zip(columns, base_columns)]
+            columns = new_columns
+        
+        return columns
 
     def get_column_value(self):
         pass
@@ -144,6 +177,12 @@ class PageRange:
             if len(self.tail_records) == 0:
                 return None
             return self.tail_records[next(reversed(self.tail_records))]
+        
+    def get_record(self, is_base, rid):
+        if is_base:
+            return self.base_records.get(rid, None)
+        else:
+            return self.tail_records.get(rid, None)
         
     def add_record(self, is_base, record):
         if is_base:
