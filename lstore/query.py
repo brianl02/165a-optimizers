@@ -22,6 +22,10 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
+        ''' NOTE: TA answered my question on piazza and said that instead of this method he recommends implementing delete by adding 
+        a new tail record that has all its columns set to NULL to mark that base record as deleted, not sure if we should use this method
+        or not yet but will let you know and update with new pseudocode - Brian '''
+
         # use index to get RID of base record
         # call the function in table to get a list of data locations for base record and all its tail records
         # for the base record and all tail records, mark them as deleted by setting RID to special invalidation flag
