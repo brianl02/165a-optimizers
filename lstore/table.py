@@ -123,13 +123,14 @@ class Table:
         version_num = 0
 
         while indirection_rid != base_rid or any(value is None for value in columns):
-            record = page_range.get_record(is_base=False, rid=indirection_rid) 
-            current_columns = record.columns
-
             current_page_directory_entry = self.page_directory[indirection_rid]
             current_page_range_number = current_page_directory_entry.page_range_number
             current_is_base = current_page_directory_entry.is_base
             current_data_locations = current_page_directory_entry.data_locations
+
+            current_page_range = self.page_range_directory[current_page_range_number]
+            current_record = current_page_range.get_record(is_base=current_is_base, rid=indirection_rid)
+            current_columns = current_record.columns
             
             indirection_rid_page_number = current_data_locations[INDIRECTION_COLUMN].page_number
             indirection_rid_offset = current_data_locations[INDIRECTION_COLUMN].offset
