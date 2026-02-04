@@ -55,15 +55,18 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, search_key, search_key_index, projected_columns_index):
-        # using search key and search key index, get list of RIDs from index class
-        # for loop that goes through each RID
-            # call function in table to traverse backwards from latest tail record
-            # for each value in projected columns index
-                # if 1, add item to new record object
-                # if 0, skip
-            # add new record object to list
-        pass
-
+        rid_list = self.table.index.locate(search_key_index, search_key)
+        record_list = []
+        for rid in rid_list:
+            columns = self.table.construct_full_record(rid)
+            primary_key = self.table.get_primary_key(rid)
+            new_columns = []
+            for i in range(len(projected_columns_index)):
+                if projected_columns_index[i] == 1:
+                    continue
+                new_columns.append(columns[i])
+            record_list.append(Record(rid, primary_key, new_columns))
+        return record_list
     
     """
     # Read matching record with specified search key
@@ -76,15 +79,18 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
-        # using search key and search key index, get list of RIDs from index class
-        # for loop that goes through each RID
-            # call function in table to traverse backwards from latest tail record, but specify relative version
-            # for each value in projected columns index
-                # if 1, add item to new record object
-                # if 0, skip
-            # add new record object to list 
-        pass
-
+        rid_list = self.table.index.locate(search_key_index, search_key)
+        record_list = []
+        for rid in rid_list:
+            columns = self.table.construct_full_record(rid, relative_version * -1)
+            primary_key = self.table.get_primary_key(rid)
+            new_columns = []
+            for i in range(len(projected_columns_index)):
+                if projected_columns_index[i] == 1:
+                    continue
+                new_columns.append(columns[i])
+            record_list.append(Record(rid, primary_key, new_columns))
+        return record_list
     
     """
     # Update a record with specified key and columns
@@ -116,13 +122,20 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_range, end_range, aggregate_column_index):
-        # for loop through every key in range
-            # get RID from index (if no RID, continue)
-            # call function in table that traverses backward till value found
-            # if value not null, add to sum
-        # if no records were found, return False
-        pass
-
+        sum = 0
+        has_records = False
+        for key in range(start_range, end_range + 1):
+            rid = self.table.index.locate(0, key)
+            if rid is None:
+                continue
+            has_records = True
+            column_value = self.table.get_column_value(rid, aggregate_column_index)
+            if column_value is None:
+                column_value = 0
+            sum += column_value
+        if not has_records:
+            return False
+        return sum
     
     """
     :param start_range: int         # Start of the key range to aggregate 
@@ -134,13 +147,20 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum_version(self, start_range, end_range, aggregate_column_index, relative_version):
-        # calculate page range numbers for start and end range
-        # check if no records in range, if so return False
-        # for loop through every key in range
-            # get RID from index (if no RID, continue)
-            # call function in table that traverses backward till value found, specifying relative version
-            # if value not null, add to sum
-        pass
+        sum = 0
+        has_records = False
+        for key in range(start_range, end_range + 1):
+            rid = self.table.index.locate(0, key)
+            if rid is None:
+                continue
+            has_records = True
+            column_value = self.table.get_column_value(rid, aggregate_column_index, relative_version * -1)
+            if column_value is None:
+                column_value = 0
+            sum += column_value
+        if not has_records:
+            return False
+        return sum
 
     
     """

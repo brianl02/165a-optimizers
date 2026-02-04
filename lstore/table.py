@@ -47,6 +47,18 @@ class Table:
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
         self.page_range_directory = {}
 
+    def get_primary_key(self, rid):
+        page_directory_entry = self.page_directory[rid]
+        page_range_number = page_directory_entry.page_range_number
+        is_base = page_directory_entry.is_base
+        page_range = self.page_range_directory[page_range_number]
+
+        record = page_range.get_record(is_base, rid)
+        primary_key = record.columns[self.key]
+
+        return primary_key
+
+
     def add_page_range(self, page_range_number):
         if page_range_number in self.page_range_directory:
             return False
