@@ -101,20 +101,23 @@ class Table:
         page_range.add_record(is_base, record)
         # TODO update index, waiting for code from index.py
         return
-    
-    # def get_all_record_versions(self):
-    #     # make list of PageDirectoryEntries
-    #     # add PDE for base record to list
-    #     # extract RID of base record
-    #     # extract RID of most recent tail record from indirection pointer of base record
-    #     # while loop that loops till RID of record you are examining is base record
-    #         # get PDE of current record
-    #         # add PDE to list
-    #         # extract RID of next tail record from indirection pointer of current record
-    #     # return list of PDEs
-    #     pass
+     
+    def construct_full_record(self, rid, relative_version=0):
+        # get page directory entry from RID
+        # get location of RID from page directory entry, save as base RID
+        # get location of indirection from page directory entry, save
+        # while columns are not complete, or base record not reached
+            # if relative version hasn't been reached, continue without saving any info
+            # using rid, get record object
+            # from record object, get all columns
+            # using rid, get page directory entry
+            # get indirection pointer
+            # fill in null values with values from this record
+        # if base record was reached, use values from base record to fill in any remaining nulls
+        # return array of all column values
+        pass
 
-    def get_relative_version(self):
+    def get_column_value(self):
         pass
 
     def __merge(self):
@@ -128,26 +131,26 @@ class PageRange:
         self.page_range_number = page_range_number
         self.base_pages = [[Page()] for _ in range(table.num_columns + 3)]
         self.tail_pages = [[Page()] for _ in range(table.num_columns + 3)]
-        self.base_records = []
-        self.tail_records = []
+        self.base_records = {}
+        self.tail_records = {}
         self.num_records = 0
 
     def get_last_record(self, is_base):
         if is_base:
             if len(self.base_records) == 0:
                 return None
-            return self.base_records[-1]
+            return self.base_records[next(reversed(self.base_records))]
         else:
             if len(self.tail_records) == 0:
                 return None
-            return self.tail_records[-1]
+            return self.tail_records[next(reversed(self.tail_records))]
         
     def add_record(self, is_base, record):
         if is_base:
-            self.base_records.append(record)
+            self.base_records[record.rid] = record
             self.num_records += 1
         else:
-            self.tail_records.append(record)
+            self.tail_records[record.rid] = record
 
     def add_page(self, is_base, column_number):
         if is_base:
