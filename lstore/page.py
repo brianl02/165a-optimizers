@@ -22,6 +22,13 @@ class Page:
         self.current_offset += COLUMN_ENTRY_SIZE
         return True
     
+    def write(self, value, offset):
+        if offset + COLUMN_ENTRY_SIZE > PAGE_SIZE:
+            return False
+        value_in_bytes = value.to_bytes(8, byteorder='little')
+        self.data[offset : offset + COLUMN_ENTRY_SIZE] = value_in_bytes
+        return True
+    
     def read(self, index):
         if index >= self.num_records:
             return None
