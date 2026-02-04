@@ -22,14 +22,10 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
-        ''' NOTE: TA answered my question on piazza and said that instead of this method he recommends implementing delete by adding 
-        a new tail record that has all its columns set to NULL to mark that base record as deleted, not sure if we should use this method
-        or not yet but will let you know and update with new pseudocode - Brian '''
-
         # use index to get RID of base record
-        # call the function in table to get a list of data locations for base record and all its tail records
-        # for the base record and all tail records, mark them as deleted by setting RID to special invalidation flag
-        # maybe: remove all references to that record so it can't be accessed anymore? (unsure, need to ask TA/professor)
+        # call update with all columns set to None to insert tail record of all nulls
+        # remove primary key from index, and any mapping from the old column values to RID in other indices
+        # remove RID of base record from page directory
         pass
     
     
@@ -82,10 +78,15 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
+
+
+        # IMPORTANT: must check if columns are all set to null, if so then you are doing a delete operation and SE should be all 0's
+
+
         # use index to get RID of base record
         # use page directory to get data locations of base record
         # create new tail record object
-        # construct variable that holds all columns including metadata
+        # construct variable that holds all columns including metadata 
         # update indirection pointer and schema encoding of base record 
         # call add record in table class 
         # (note: if record is being updated for the first time, must add copy of base record as tail record)

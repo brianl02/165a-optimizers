@@ -2,7 +2,7 @@ from lstore import page
 from lstore.index import Index
 from time import time
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List
 
 from lstore.page import Page
 
