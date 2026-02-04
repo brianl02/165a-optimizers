@@ -32,18 +32,12 @@ class Query:
     """
     def insert(self, *columns):
         schema_encoding = '0' * self.table.num_columns
-        # Get primary key from columns
-        # using index, check if primary key already exists, if true then return false
-        # calculate page range number
-        # get page range or create new one
-        # get last base record of page range
-        # get RID of last base record
-        # using RID, find data locations of last base record
-        # calculate new data locations for new record
-        # create new record with new RID
-        # write data into correct pages + offsets
-        # update page directory so new RID points to correct locations
-        # update index
+        # check index to see if key already taken
+        # calculate range number using primary key
+        # check if range exists, if not create it
+        # create new record object with new RID
+        # construct variable that holds all columns including metadata
+        # call add record in table function
         pass
 
     

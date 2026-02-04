@@ -10,17 +10,18 @@ INDIRECTION_COLUMN = 1
 # TIMESTAMP_COLUMN = 2
 SCHEMA_ENCODING_COLUMN = 2
 
-NUM_RECORDS_PER_BASE_TAIL = Page.MAX_RECORDS_PER_PAGE
-NUM_BASE_PER_RANGE = 16
-NUM_RECORDS_PER_RANGE = NUM_BASE_PER_RANGE * NUM_RECORDS_PER_BASE_TAIL
+NUM_RECORDS_PER_RANGE = 1024
 
+@dataclass
+class PageCoord:
+    page_number: int
+    offset: int
 
-# @dataclass
-# class PageDirectoryEntry:
-#     page_range_number: int
-#     in_base_page: bool
-#     base_tail_page_number: int
-#     data_locations: List[Tuple[int, int]] 
+@dataclass
+class PageDirectoryEntry:
+    page_range_number: int
+    is_base: bool
+    data_locations: List[PageCoord] 
 
 class Record:
 
@@ -43,70 +44,88 @@ class Table:
         self.page_directory = {}
         self.index = Index(self)
         self.merge_threshold_pages = 50  # The threshold to trigger a merge
-        self.page_ranges = []
-        self.num_page_ranges = 1 
-        self.add_page_range()
+        self.page_range_directory = {}
 
-    def add_page_range(self):
-        self.page_ranges.append(PageRange(self, self.num_page_ranges))
-        self.num_page_ranges += 1 
-
-    def get_last_page_range(self):
-        return self.page_ranges[-1]
-
-    def get_next_record_location(self, is_base): 
-        if is_base:
-            pass
+    def add_page_range(self, page_range_number):
+        if page_range_number in self.page_range_directory:
+            return False
+        self.page_range_directory[page_range_number] = PageRange(self, page_range_number)
+        return True
+    
+    def add_record(self, page_range_number, is_base, *all_columns, record):
+        page_range = self.page_range_directory[page_range_number]
+        last_record = page_range.get_last_record(is_base)
+        last_record_info = None
+        last_record_data_locations = None
+        if last_record is None:
+            last_record_info = PageDirectoryEntry(page_range_number, is_base, [PageCoord(0, 0) for _ in range(self.num_columns + 3)])
         else:
-            pass
+            last_record_rid = last_record.rid
+            last_record_info = self.page_directory[last_record_rid]
+        last_record_data_locations = last_record_info.data_locations
+        if is_base:
+            pages = page_range.base_pages
+        else:
+            pages = page_range.tail_pages
+        new_record_data_locations = []
+        for column_number in range(self.num_columns + 3):
+            if all_columns[column_number] is None:
+                new_record_data_locations[column_number] = None
+                continue
+            last_page = pages[column_number][-1]
+            last_record_page_number = last_record_data_locations[column_number].page_number
+            last_record_offset = last_record_data_locations[column_number].offset
+            if last_page.has_capacity():
+                new_page_coord = PageCoord(last_record_page_number, last_record_offset + 1)
+            else:
+                page_range.add_page(is_base, column_number)
+                new_page_number = last_record_page_number + 1
+                new_page_coord = PageCoord(new_page_number, 0)
+            new_record_data_locations[column_number] = new_page_coord
+            page_to_write = pages[column_number][new_page_coord.page_number]
+            page_to_write.write(all_columns[column_number])
+        new_page_directory_entry = PageDirectoryEntry(page_range_number, is_base, new_record_data_locations)
+        self.page_directory[record.rid] = new_page_directory_entry
+        page_range.add_record(is_base, record)
+        # TODO update index
+        return
 
     def __merge(self):
         print("merge is happening")
         pass
- 
 
 class PageRange:
 
     def __init__(self, table, page_range_number):
         self.table = table
         self.page_range_number = page_range_number
-        self.base_pages = []
-        self.tail_pages = []
-        self.num_base_pages = 0
-        self.num_tail_pages = 0
-        self.add_base_tail_page(True)
-        self.add_base_tail_page(False)
-    
-    def add_base_tail_page(self, is_base):
-        if is_base and not self.has_capacity():
-            return False 
-        if is_base:
-            self.base_pages.append(BaseTailPage(True, self.num_base_pages, self, self.table))
-            self.num_base_pages += 1
-        else:
-            self.tail_pages.append(BaseTailPage(False, self.num_tail_pages, self, self.table))
-            self.num_tail_pages += 1
-        return True
-    
-    def get_last_base_page(self):
-        return self.base_pages[-1]
-    
-    def has_capacity(self):
-        return self.num_base_pages < NUM_BASE_PER_RANGE
-        
-
-class BaseTailPage:
-
-    def __init__(self, is_base, page_number, page_range, table):
-        self.is_base = is_base
-        self.page_number = page_number
-        self.page_range = page_range
-        self.table = table
-        self.pages = [Page() for _ in range(table.num_columns + 3)]
+        self.base_pages = [[Page()] for _ in range(table.num_columns + 3)]
+        self.tail_pages = [[Page()] for _ in range(table.num_columns + 3)]
+        self.base_records = []
+        self.tail_records = []
         self.num_records = 0
 
-    def has_capacity(self):
-        return self.num_records < NUM_RECORDS_PER_BASE_TAIL
+    def get_last_record(self, is_base):
+        if is_base:
+            if len(self.base_records) == 0:
+                return None
+            return self.base_records[-1]
+        else:
+            if len(self.tail_records) == 0:
+                return None
+            return self.tail_records[-1]
+        
+    def add_record(self, is_base, record):
+        if is_base:
+            self.base_records.append(record)
+            self.num_records += 1
+        else:
+            self.tail_records.append(record)
 
+    def add_page(self, is_base, column_number):
+        if is_base:
+            self.base_pages[column_number].append(Page())
+        else:
+            self.tail_pages[column_number].append(Page())
 
-
+ 
