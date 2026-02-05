@@ -77,9 +77,25 @@ class Query:
             data_locations[RID_COLUMN] = self._append_value(page_range, RID_COLUMN,rid,is_base=True)
             data_locations[INDIRECTION_COLUMN] = self._append_value(page_range,INDIRECTION_COLUMN, 0, is_base = True)
             data_locations[SCHEMA_ENCODING_COLUMN] = self._append_value(page_range,SCHEMA_ENCODING_COLUMN,schema_encoding, is_base = True)
-            
 
-            pass
+            # starting from index 3
+            # 0 - RID
+            # 1 - Indirection point to tail record
+            # 2 - Schema encoding (check which one have been updated)
+            # 3,4,5 - User data
+            for i, val in enumerate(columns):
+                base_col_idx = i + 3
+                data_locations[base_col_idx] = self._append_value(page_range, base_col_idx,val, is_base = True)
+
+            # updating page directory
+            self.table.page_directory[rid] = PageDirectoryEntry(
+                page_range_number = page_range_number,
+                data_locations = data_locations
+            )
+
+            return True
+        except Exception:
+            return False
 
     
     """
