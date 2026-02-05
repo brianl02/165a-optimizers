@@ -23,6 +23,7 @@ class Query:
     """
     def delete(self, primary_key):
         # use index to get RID of base record
+        
         # call update with all columns set to None to insert tail record of all nulls
         # remove primary key from index, and any mapping from the old column values to RID in other indices
         # remove RID of base record from page directory
