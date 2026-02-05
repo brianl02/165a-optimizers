@@ -42,38 +42,49 @@ class Query:
 
             # use the key to find a pageRange
             primary_key = column[self.table.key]
+            # calculate range number using primary key
             page_range_number = primary_key // PAGE_RANGE_SIZE
 
             # if there isn't page number then we build a new page
             if page_range_number not in self.table.page_range_directory:
                 self.table.add_page_range(page_range_number)
-            
+
             page_range = self.table.page_range_directory[page_range_number]
 
-            #distribut RID
+            # allocate  RID
             if len(self.table.page_directory)  == 0:
                 rid = 0
             else:
                 rid = max(self.table.page_directory.keys()) +1
-                
 
+            
+            # schema for base record
+            schema_encoding = '0' * self.table.num_columns
+                     
+            # create new record object with new RID
+            # call add record in table class
+            record = Record(rid, primary_key, list(columns))
+            page_range.add_record(record, is_base = True)
 
+            # construct variable that holds all columns including metadata
+            # track locations
+            total_cols = self.table.num_columns + 3
+            data_locations = [None] * total_cols
 
+            # hidding col : RID（record ID, '0' base record）
+            # /Indirection(point to tail record, '1' tail record)
+            #/Schema(which col have been updated?)
+            data_locations[RID_COLUMN] = self._append_value(page_range, RID_COLUMN,rid,is_base=True)
+            data_locations[INDIRECTION_COLUMN] = self._append_value(page_range,INDIRECTION_COLUMN, 0, is_base = True)
+            data_locations[SCHEMA_ENCODING_COLUMN] = self._append_value(page_range,SCHEMA_ENCODING_COLUMN,schema_encoding, is_base = True)
+            
 
-
-        # schema for base record
-        schema_encoding = '0' * self.table.num_columns
-        # check index to see if key already taken
-        # calculate range number using primary key
-        # check if range exists, if not create it
-        # create new record object with new RID
-        # construct variable that holds all columns including metadata
-        # call add record in table class
-        pass
+            pass
 
     
     """
     # Read matching record with specified search key
+
     # :param search_key: the value you want to search based on
     # :param search_key_index: the column index you want to search based on
     # :param projected_columns_index: what columns to return. array of 1 or 0 values.
