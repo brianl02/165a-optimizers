@@ -31,6 +31,33 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
+        try:
+            # check if col if is correct number
+            if len(column) != self.table.num_columns:
+                return False
+
+            # use the key to find a pageRange
+            primary_key = column[self.table.key]
+            page_range_number = primary_key // PAGE_RANGE_SIZE
+
+            # if there isn't page number then we build a new page
+            if page_range_number not in self.table.page_range_directory:
+                self.table.add_page_range(page_range_number)
+            
+            page_range = self.table.page_range_directory[page_range_number]
+
+            #distribut RID
+            if len(self.table.page_directory)  == 0:
+                rid = 0
+            else:
+                rid = max(self.table.page_directory.keys()) +1
+                
+
+
+
+
+
+        # schema for base record
         schema_encoding = '0' * self.table.num_columns
         pass
 
