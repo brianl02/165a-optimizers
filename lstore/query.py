@@ -22,6 +22,10 @@ class Query:
     # Return False if record doesn't exist or is locked due to 2PL
     """
     def delete(self, primary_key):
+        # use index to get RID of base record
+        # call update with all columns set to None to insert tail record of all nulls
+        # remove primary key from index, and any mapping from the old column values to RID in other indices
+        # remove RID of base record from page directory
         pass
     
     
@@ -59,6 +63,12 @@ class Query:
 
         # schema for base record
         schema_encoding = '0' * self.table.num_columns
+        # check index to see if key already taken
+        # calculate range number using primary key
+        # check if range exists, if not create it
+        # create new record object with new RID
+        # construct variable that holds all columns including metadata
+        # call add record in table class
         pass
 
     
@@ -72,8 +82,18 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select(self, search_key, search_key_index, projected_columns_index):
-        pass
-
+        rid_list = self.table.index.locate(search_key_index, search_key)
+        record_list = []
+        for rid in rid_list:
+            columns = self.table.construct_full_record(rid)
+            primary_key = self.table.get_primary_key(rid)
+            new_columns = []
+            for i in range(len(projected_columns_index)):
+                if projected_columns_index[i] == 1:
+                    continue
+                new_columns.append(columns[i])
+            record_list.append(Record(rid, primary_key, new_columns))
+        return record_list
     
     """
     # Read matching record with specified search key
@@ -86,8 +106,18 @@ class Query:
     # Assume that select will never be called on a key that doesn't exist
     """
     def select_version(self, search_key, search_key_index, projected_columns_index, relative_version):
-        pass
-
+        rid_list = self.table.index.locate(search_key_index, search_key)
+        record_list = []
+        for rid in rid_list:
+            columns = self.table.construct_full_record(rid, relative_version * -1)
+            primary_key = self.table.get_primary_key(rid)
+            new_columns = []
+            for i in range(len(projected_columns_index)):
+                if projected_columns_index[i] == 1:
+                    continue
+                new_columns.append(columns[i])
+            record_list.append(Record(rid, primary_key, new_columns))
+        return record_list
     
     """
     # Update a record with specified key and columns
@@ -95,6 +125,18 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
+
+
+        # IMPORTANT: must check if columns are all set to null, if so then you are doing a delete operation and SE should be all 0's
+
+
+        # use index to get RID of base record
+        # use page directory to get data locations of base record
+        # create new tail record object
+        # construct variable that holds all columns including metadata 
+        # update indirection pointer and schema encoding of base record 
+        # call add record in table class 
+        # (note: if record is being updated for the first time, must add copy of base record as tail record)
         pass
         
     
@@ -107,8 +149,20 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum(self, start_range, end_range, aggregate_column_index):
-        pass
-
+        sum = 0
+        has_records = False
+        for key in range(start_range, end_range + 1):
+            rid = self.table.index.locate(0, key)
+            if rid is None:
+                continue
+            has_records = True
+            column_value = self.table.get_column_value(rid, aggregate_column_index)
+            if column_value is None:
+                column_value = 0
+            sum += column_value
+        if not has_records:
+            return False
+        return sum
     
     """
     :param start_range: int         # Start of the key range to aggregate 
@@ -120,7 +174,20 @@ class Query:
     # Returns False if no record exists in the given range
     """
     def sum_version(self, start_range, end_range, aggregate_column_index, relative_version):
-        pass
+        sum = 0
+        has_records = False
+        for key in range(start_range, end_range + 1):
+            rid = self.table.index.locate(0, key)
+            if rid is None:
+                continue
+            has_records = True
+            column_value = self.table.get_column_value(rid, aggregate_column_index, relative_version * -1)
+            if column_value is None:
+                column_value = 0
+            sum += column_value
+        if not has_records:
+            return False
+        return sum
 
     
     """
