@@ -13,48 +13,7 @@ class Index:
         self.create_index(0)
         pass
 
-    """
-    # returns the location of all records with the given value on column "column"
-    """
 
-    def locate(self, column, value):
-        idx = self.indices[column]
-        if idx is not None:
-            return list(idx.get(value, []))
-
-        # No index -> full scan
-        result = []
-
-        records = getattr(self.table, "records", None)
-        if records is None:
-            return result  # or raise error if you prefer
-
-        # records as dict: rid -> record
-        if isinstance(records, dict):
-            items = records.items()
-        else:
-            # records as list: record objects
-            items = enumerate(records)
-
-        for rid_key, record in items:
-            rid = getattr(record, "rid", rid_key)
-
-            # --- get row values (edit here if your record stores differently) ---
-            if hasattr(record, "columns"):
-                row = record.columns
-            elif isinstance(record, (list, tuple)):
-                row = record
-            else:
-                row = getattr(record, "values", None)
-            # ---------------------------------------------------------------
-
-            if row is None:
-                continue
-
-            if row[column] == value:
-                result.append(rid)
-
-        return result
     def add_to_index(self, column, value):
         # check if index exists, if not create it
         # given key, get old value
@@ -186,7 +145,7 @@ class Index:
         v = row[column]
         if begin <= v <= end:
             result.append(rid)
-
+ 
     return result
 
 
