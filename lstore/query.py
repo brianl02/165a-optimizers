@@ -1,4 +1,4 @@
-from lstore import page, table
+from lstore import table
 from lstore.table import Table, Record
 from lstore.index import Index
 
@@ -29,16 +29,7 @@ class Query:
                 return False
                 base_rid = rids[0]
         # call update with all columns set to None to insert tail record of all nulls
-        if not self.update(primary_key, *([None] * self.table.num_columns)):
-            return False
         # remove primary key from index, and any mapping from the old column values to RID in other indices
-        try:
-            self.table.index.delete(self.table.key, primary_key, base_rid)
-        except:
-            try:
-                self.table.index.delete(primary_key)
-            except:
-                pass
         # remove RID of base record from page directory
 
         entry = self.table.page_directory[base_rid] # type: ignore
@@ -57,8 +48,6 @@ class Query:
 
 
         pass
-
-
     
     
     """
