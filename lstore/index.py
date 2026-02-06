@@ -4,6 +4,7 @@ A data strucutre holding indices for various columns of a table. Key column shou
 
 class Index:
 
+    # every index is a dictionary that maps a column value to a set of RIDs 
     def __init__(self, table):
         self.indices = [None] *  table.num_columns
         self.table = table
@@ -13,10 +14,18 @@ class Index:
     # returns the location of all records with the given value on column "column"
     """
 
-    def add_to_index():
+    def add_to_index(self, column, value):
+        # check if index exists, if not create it
+        # given key, get old value
+        # update old value by adding new RID
+        # put old value back into dictionary
         pass
 
-    def remove_from_index():
+    def remove_from_index(self, column, value):
+        # if index doesn't exist, do nothing
+        # get old value with key
+        # remove RID from set of RIDs
+        # put old value back into dictionary
         pass
 
     def locate(self, column, value):
