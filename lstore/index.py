@@ -58,31 +58,31 @@ class Index:
         return list(rids)
 
           
-          if idx is not None:
-            return list(idx.get(value, []))
-          result = []
-          records = getattr(self.table, "records", None)
-          if records is None:
-            return result
-          if isinstance(records, dict):
-             items = records.items()
-          else:
-            items = enumerate(records)
-          for rid_key, record in items:
-            rid = getattr(record, "rid", rid_key)
-            if hasattr(record, "columns"):
-               row = record.columns
-            elif isinstance(record, (list, tuple)):
-               row = record
-            else:
-               row = getattr(record, "values", None)
-            if row is None:
-               continue
+        #   if idx is not None:
+        #     return list(idx.get(value, []))
+        #   result = []
+        #   records = getattr(self.table, "records", None)
+        #   if records is None:
+        #     return result
+        #   if isinstance(records, dict):
+        #      items = records.items()
+        #   else:
+        #     items = enumerate(records)
+        #   for rid_key, record in items:
+        #     rid = getattr(record, "rid", rid_key)
+        #     if hasattr(record, "columns"):
+        #        row = record.columns
+        #     elif isinstance(record, (list, tuple)):
+        #        row = record
+        #     else:
+        #        row = getattr(record, "values", None)
+        #     if row is None:
+        #        continue
 
-            if row[column] == value:
-               result.append(rid)
+        #     if row[column] == value:
+        #        result.append(rid)
 
-          return result
+        #   return result
 
 
 
@@ -97,76 +97,76 @@ class Index:
         return list(all_rids)
 
 
-        idx = self.indices[column]
-        if idx is not None:
-            result = []
-            for v, rids in idx.items():
-                if begin <= v <= end:
-                    result.extend(list(rids))
-            return result
+        # idx = self.indices[column]
+        # if idx is not None:
+        #     result = []
+        #     for v, rids in idx.items():
+        #         if begin <= v <= end:
+        #             result.extend(list(rids))
+        #     return result
 
-        # No index -> full scan
-        result = []
+        # # No index -> full scan
+        # result = []
 
-        records = getattr(self.table, "records", None)
-        if records is None:
-            return result
+        # records = getattr(self.table, "records", None)
+        # if records is None:
+        #     return result
 
-        if isinstance(records, dict):
-            items = records.items()
-        else:
-            items = enumerate(records)
+        # if isinstance(records, dict):
+        #     items = records.items()
+        # else:
+        #     items = enumerate(records)
 
-        for rid_key, record in items:
-            rid = getattr(record, "rid", rid_key)
+        # for rid_key, record in items:
+        #     rid = getattr(record, "rid", rid_key)
 
-            # --- get row values (edit here if your record stores differently) ---
-            if hasattr(record, "columns"):
-                row = record.columns
-            elif isinstance(record, (list, tuple)):
-                row = record
-            else:
-                row = getattr(record, "values", None)
-            # ---------------------------------------------------------------
+        #     # --- get row values (edit here if your record stores differently) ---
+        #     if hasattr(record, "columns"):
+        #         row = record.columns
+        #     elif isinstance(record, (list, tuple)):
+        #         row = record
+        #     else:
+        #         row = getattr(record, "values", None)
+        #     # ---------------------------------------------------------------
 
-            if row is None:
-                continue
+        #     if row is None:
+        #         continue
 
-            v = row[column]
-            if begin <= v <= end:
-                result.append(rid)
+        #     v = row[column]
+        #     if begin <= v <= end:
+        #         result.append(rid)
 
-        return result
         # return result
-        result = []
+        # # return result
+        # result = []
 
-        records = getattr(self.table, "records", None)
-        if records is None:
-            return result
+        # records = getattr(self.table, "records", None)
+        # if records is None:
+        #     return result
 
-            if isinstance(records, dict):
-            items = records.items()
-            else:
-            items = enumerate(records)
+        #     if isinstance(records, dict):
+        #     items = records.items()
+        #     else:
+        #     items = enumerate(records)
 
-            for rid_key, record in items:
-            rid = getattr(record, "rid", rid_key)
+        #     for rid_key, record in items:
+        #     rid = getattr(record, "rid", rid_key)
 
-            if hasattr(record, "columns"):
-                row = record.columns
-            elif isinstance(record, (list, tuple)):
-                    row = record
-            else:
-                    row = getattr(record, "values", None)
+        #     if hasattr(record, "columns"):
+        #         row = record.columns
+        #     elif isinstance(record, (list, tuple)):
+        #             row = record
+        #     else:
+        #             row = getattr(record, "values", None)
             
-            if row is None:
-                continue
+        #     if row is None:
+        #         continue
 
-            v = row[column]
-            if begin <= v <= end:
-                result.append(rid)
+        #     v = row[column]
+        #     if begin <= v <= end:
+        #         result.append(rid)
     
-        return result
+        # return result
 
 
     """
@@ -175,6 +175,8 @@ class Index:
 
     def create_index(self, column_number):
         idx = {}
+        self.indices[column_number] = idx
+        return True
 
         records = getattr(self.table, "records", None)
         if records is None:
