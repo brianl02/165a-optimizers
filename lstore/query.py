@@ -26,7 +26,9 @@ class Query:
     """
     def delete(self, primary_key):
         # use index to get RID of base record
-        
+        # call update with all columns set to None to insert tail record of all nulls
+        # remove primary key from index, and any mapping from the old column values to RID in other indices
+        # remove RID of base record from page directory
         rids = self.table.index.locate(self.table.key, primary_key)
         if not rids: 
             return False
@@ -35,7 +37,6 @@ class Query:
         original_columns = record.columns
 
         self.update(primary_key, *[None] * self.table.num_columns)
-        # self.table.index.remove_from_index(self.table.key, primary_key, base_rid)
 
         for i, column in enumerate(original_columns):
             self.table.index.remove_from_index(i, column, base_rid)
@@ -43,25 +44,6 @@ class Query:
         del self.table.page_directory[base_rid]
         return True
 
-
-
-        # call update with all columns set to None to insert tail record of all nulls
-        # remove primary key from index, and any mapping from the old column values to RID in other indices
-        # remove RID of base record from page directory
-
-        # entry = self.table.page_directory[base_rid] # type: ignore
-        # pr = self.table.page.range_directory[entry.page_range_number]
-        # if base_rid in page.range.base_records:
-        #     del page.range.base_records[base_rid]
-
-        # if base_rid in self.table.page_directory:
-        #     del self.table.page_directory[base_rid]
-
-        #     return True
-        # return False
-
-    
-    
     """
     # Insert a record with specified columns
     # Return True upon succesful insertion
@@ -85,10 +67,6 @@ class Query:
         page_range = self.table.page_range_directory[page_range_number]
 
         # allocate  RID
-        # if len(self.table.page_directory)  == 0:
-        #     rid = 0
-        # else:
-        #     rid = max(self.table.page_directory.keys()) +1
         rid = next(_rid_counter)
 
         # schema for base record
@@ -97,7 +75,7 @@ class Query:
         # create new record object with new RID
         # call add record in table class
         record = Record(rid, primary_key, list(columns))
-
+        # construct variable that holds all columns including metadata
         all_columns = [rid, None, schema_encoding] + list(columns)
 
         self.table.add_record(page_range_number, True, *all_columns, record)
@@ -105,36 +83,8 @@ class Query:
         for i, column in enumerate(columns):
             self.table.index.add_to_index(i, column, rid)
 
-        # # construct variable that holds all columns including metadata
-        # # track locations
-        # total_cols = self.table.num_columns + 3
-        # data_locations = [None] * total_cols
-
-        # # hidding col : RID（record ID, '0' base record）
-        # # /Indirection(point to tail record, '1' tail record)
-        # #/Schema(which col have been updated?)
-        # data_locations[RID_COLUMN] = self._append_value(page_range, RID_COLUMN,rid,is_base=True)
-        # data_locations[INDIRECTION_COLUMN] = self._append_value(page_range,INDIRECTION_COLUMN, 0, is_base = True)
-        # data_locations[SCHEMA_ENCODING_COLUMN] = self._append_value(page_range,SCHEMA_ENCODING_COLUMN,schema_encoding, is_base = True)
-
-        # # starting from index 3
-        # # 0 - RID
-        # # 1 - Indirection point to tail record
-        # # 2 - Schema encoding (check which one have been updated)
-        # # 3,4,5 - User data
-        # for i, val in enumerate(columns):
-        #     base_col_idx = i + 3
-        #     data_locations[base_col_idx] = self._append_value(page_range, base_col_idx,val, is_base = True)
-
-        # # updating page directory
-        # self.table.page_directory[rid] = PageDirectoryEntry(
-        #     page_range_number = page_range_number,
-        #     data_locations = data_locations
-        # )
-
         return True
 
-    
     """
     # Read matching record with specified search key
 
@@ -189,12 +139,19 @@ class Query:
     # Returns False if no records exist with given key or if the target record cannot be accessed due to 2PL locking
     """
     def update(self, primary_key, *columns):
+        # IMPORTANT: must check if columns are all set to null, if so then you are doing a delete operation and SE should be all 0's
+        # use index to get RID of base record
+        # use page directory to get data locations of base record
+        # create new tail record object
+        # construct variable that holds all columns including metadata 
+        # update indirection pointer and schema encoding of base record 
+        # call add record in table class 
+        # (note: if record is being updated for the first time, must add copy of base record as tail record)
 
         rids = self.table.index.locate(self.table.key,primary_key)
         if not rids:
             return False
         base_rid = rids[0]
-
 
         base_page_directory_entry = self.table.page_directory[base_rid]
         base_page_range_number = base_page_directory_entry.page_range_number
@@ -253,39 +210,8 @@ class Query:
         for i, column in enumerate(add_to_index):
             self.table.index.add_to_index(i, column, base_rid)
 
-
+        return True
             
-
-        # #new tail rid 
-        # new_tail_rid = max(self.table.page_directory.keys()) + 1
-
-        # values = [new_tail_rid, base_rid, schema]
-        # for v in columns:
-        #     values.append(v)
-
-        #     rec = record(new_tail_rid, primary_key, list(columns))
-        #     self.table.add_record(pr_num, False, *values, record=rec)
-
-        #     indir_loc = base_entry.data_location[1]
-        #     base_indir_page +self.table.page_range_directory[pr_num].base_pages[1][indir_loc.page_number]
-        #     base_indir_page.write(new_tail_rid, indir_loc.offset)
-
-
-            #
-
-
-            # IMPORTANT: must check if columns are all set to null, if so then you are doing a delete operation and SE should be all 0's
-
-
-            # use index to get RID of base record
-            # use page directory to get data locations of base record
-            # create new tail record object
-            # construct variable that holds all columns including metadata 
-            # update indirection pointer and schema encoding of base record 
-            # call add record in table class 
-            # (note: if record is being updated for the first time, must add copy of base record as tail record)
-        
-    
     """
     :param start_range: int         # Start of the key range to aggregate 
     :param end_range: int           # End of the key range to aggregate 
