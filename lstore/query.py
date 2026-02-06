@@ -101,6 +101,9 @@ class Query:
         all_columns = [rid, None, schema_encoding] + list(columns)
 
         self.table.add_record(page_range_number, True, *all_columns, record)
+        
+        for i, column in enumerate(columns):
+            self.table.index.add_to_index(i, column, rid)
 
         # # construct variable that holds all columns including metadata
         # # track locations
@@ -187,7 +190,6 @@ class Query:
     """
     def update(self, primary_key, *columns):
 
-    
         rids = self.table.index.locate(self.table.key,primary_key)
         if not rids:
             return False
@@ -238,6 +240,19 @@ class Query:
 
         base_indirection_page.write(tail_record.rid, base_indirection_offset)
         base_schema_page.write(new_base_schema, base_schema_offset)
+
+        current_columns = self.table.construct_full_record(base_rid)
+        previous_columns = self.table.construct_full_record(base_rid, 1)
+
+        remove_from_index = [x for x, y in zip(current_columns, previous_columns) if x != y]
+        add_to_index = [y for x, y in zip(current_columns, previous_columns) if x != y]
+
+        for i, column in enumerate(remove_from_index):
+            self.table.index.remove_from_index(i, column, base_rid)
+        
+        for i, column in enumerate(add_to_index):
+            self.table.index.add_to_index(i, column, base_rid)
+
 
             
 
