@@ -1,4 +1,4 @@
-from lstore import table
+from lstore import page, table
 from lstore.table import Table, Record
 from lstore.index import Index
 
@@ -23,11 +23,41 @@ class Query:
     """
     def delete(self, primary_key):
         # use index to get RID of base record
-        
+        try:
+            rids = self.table.index.locate(self.table.key, primary_key)
+            if not rids: 
+                return False
+                base_rid = rids[0]
         # call update with all columns set to None to insert tail record of all nulls
+        if not self.update(primary_key, *([None] * self.table.num_columns)):
+            return False
         # remove primary key from index, and any mapping from the old column values to RID in other indices
+        try:
+            self.table.index.delete(self.table.key, primary_key, base_rid)
+        except:
+            try:
+                self.table.index.delete(primary_key)
+            except:
+                pass
         # remove RID of base record from page directory
+        entry = self.table.page_directory[base_rid] # type: ignore
+        pr = self.table.page.range_directory[entry.page_range_number]
+        if base_rid in page.range.base_records:
+            del page.range.base_records[base_rid]
+
+        if base_rid in self.table.page_directory:
+            del self.table.page_directory[base_rid]
+
+            return True
+        
+    except:
+    
+      return False
+
+
         pass
+
+
     
     
     """
