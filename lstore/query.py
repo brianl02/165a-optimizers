@@ -24,9 +24,29 @@ class Query:
     def delete(self, primary_key):
         # use index to get RID of base record
         
+            rids = self.table.index.locate(self.table.key, primary_key)
+            if not rids: 
+                return False
+                base_rid = rids[0]
         # call update with all columns set to None to insert tail record of all nulls
         # remove primary key from index, and any mapping from the old column values to RID in other indices
         # remove RID of base record from page directory
+
+        entry = self.table.page_directory[base_rid] # type: ignore
+        pr = self.table.page.range_directory[entry.page_range_number]
+        if base_rid in page.range.base_records:
+            del page.range.base_records[base_rid]
+
+        if base_rid in self.table.page_directory:
+            del self.table.page_directory[base_rid]
+
+            return True
+        
+
+    
+      return False
+
+
         pass
     
     
@@ -152,6 +172,42 @@ class Query:
     """
     def update(self, primary_key, *columns):
 
+    
+        rids = self.table.index.locate(self.table.key,primary_key)
+        if not rids:
+            return False
+        base_rid = rids[0]
+
+
+        base_entry = self.table.page_directory[base-rid]
+        pr_num = base_entry.page_range_number
+
+    #schema encoding
+
+schema = ""
+for v in columns:
+        if v is None:
+            schema += "0"
+        else:
+            schema += "1"
+
+            #new tail rid 
+            new_tail_rid = max(self.table.page_directory.keys()) + 1
+
+            values = [new_tail_rid, base_rid, schema]
+            for v in columns:
+                values.append(v)
+
+        rec = record(new_tail_rid, primary_key, list(columns))
+        self.table.add_record(pr_num, False, *values, record=rec)
+
+        indir_loc = base_entry.data_location[1]
+        base_indir_page +self.table.page_range_directory[pr_num].base_pages[1][indir_loc.page_number]
+        base_indir_page.write(new_tail_rid, indir_loc.offset)
+
+
+        #
+
 
         # IMPORTANT: must check if columns are all set to null, if so then you are doing a delete operation and SE should be all 0's
 
@@ -232,3 +288,4 @@ class Query:
             u = self.update(key, *updated_columns)
             return u
         return False
+=
