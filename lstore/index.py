@@ -7,32 +7,142 @@ class Index:
     def __init__(self, table):
         # One index for each table. All our empty initially.
         self.indices = [None] *  table.num_columns
-        pass
+        self.table = table
+        # Key column should be indexed by default (commonly column 0).
+        # If your table defines key column differently, change 0 to that column index.
+        self.create_index(0)
 
     """
     # returns the location of all records with the given value on column "column"
     """
 
     def locate(self, column, value):
-        pass
+        idx = self.indices[column]
+        if idx is not None:
+            return list(idx.get(value, []))
+
+        # No index -> full scan
+        result = []
+
+        records = getattr(self.table, "records", None)
+        if records is None:
+            return result  # or raise error if you prefer
+
+        # records as dict: rid -> record
+        if isinstance(records, dict):
+            items = records.items()
+        else:
+            # records as list: record objects
+            items = enumerate(records)
+
+        for rid_key, record in items:
+            rid = getattr(record, "rid", rid_key)
+
+            # --- get row values (edit here if your record stores differently) ---
+            if hasattr(record, "columns"):
+                row = record.columns
+            elif isinstance(record, (list, tuple)):
+                row = record
+            else:
+                row = getattr(record, "values", None)
+            # ---------------------------------------------------------------
+
+            if row is None:
+                continue
+
+            if row[column] == value:
+                result.append(rid)
+
+        return result
 
     """
     # Returns the RIDs of all records with values in column "column" between "begin" and "end"
     """
 
     def locate_range(self, begin, end, column):
-        pass
+        idx = self.indices[column]
+        if idx is not None:
+            result = []
+            for v, rids in idx.items():
+                if begin <= v <= end:
+                    result.extend(list(rids))
+            return result
+
+        # No index -> full scan
+        result = []
+
+        records = getattr(self.table, "records", None)
+        if records is None:
+            return result
+
+        if isinstance(records, dict):
+            items = records.items()
+        else:
+            items = enumerate(records)
+
+        for rid_key, record in items:
+            rid = getattr(record, "rid", rid_key)
+
+            # --- get row values (edit here if your record stores differently) ---
+            if hasattr(record, "columns"):
+                row = record.columns
+            elif isinstance(record, (list, tuple)):
+                row = record
+            else:
+                row = getattr(record, "values", None)
+            # ---------------------------------------------------------------
+
+            if row is None:
+                continue
+
+            v = row[column]
+            if begin <= v <= end:
+                result.append(rid)
+
+        return result
 
     """
     # optional: Create index on specific column
     """
 
     def create_index(self, column_number):
-        pass
+        idx = {}
+
+        records = getattr(self.table, "records", None)
+        if records is None:
+            self.indices[column_number] = idx
+            return
+
+        if isinstance(records, dict):
+            items = records.items()
+        else:
+            items = enumerate(records)
+
+        for rid_key, record in items:
+            rid = getattr(record, "rid", rid_key)
+
+            # --- get row values (edit here if your record stores differently) ---
+            if hasattr(record, "columns"):
+                row = record.columns
+            elif isinstance(record, (list, tuple)):
+                row = record
+            else:
+                row = getattr(record, "values", None)
+            # ---------------------------------------------------------------
+
+            if row is None:
+                continue
+
+            v = row[column_number]
+            if v not in idx:
+                idx[v] = set()
+            idx[v].add(rid)
+
+        self.indices[column_number] = idx
 
     """
     # optional: Drop index of specific column
     """
 
     def drop_index(self, column_number):
-        pass
+        self.indices[column_number] = None
