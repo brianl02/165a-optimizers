@@ -14,19 +14,39 @@ class Index:
         pass
 
 
-    def add_to_index(self, column, value):
+    def add_to_index(self, column, value, rid):
+        if self.indices[column] is None:
+            self.create_index(column)
+        idx = self.indices[column]
+        if value in idx: 
+            rids_set = idx[value]
+            rids_set.add(rid)
+            idx[value] = rids_set
+        else:
+            idx[value] = set([rid])
+        return True
         # check if index exists, if not create it
         # given key, get old value
         # update old value by adding new RID
         # put old value back into dictionary
-        pass
 
-    def remove_from_index(self, column, value):
+    def remove_from_index(self, column, value, rid):
+        if self.indices[column] is None:
+            return False
+        idx = self.indices[column]
+        if value in idx:
+            rids_set = idx[value]
+            rids_set.discard(rid)
+            idx[value] = rids_set
+        else:
+            return False
+        return True
+
+
         # if index doesn't exist, do nothing
         # get old value with key
         # remove RID from set of RIDs
         # put old value back into dictionary
-        pass
 
     def locate(self, column, value):
         # check if index exists for that column
@@ -121,32 +141,32 @@ class Index:
         result = []
 
         records = getattr(self.table, "records", None)
-    if records is None:
+        if records is None:
+            return result
+
+            if isinstance(records, dict):
+            items = records.items()
+            else:
+            items = enumerate(records)
+
+            for rid_key, record in items:
+            rid = getattr(record, "rid", rid_key)
+
+            if hasattr(record, "columns"):
+                row = record.columns
+            elif isinstance(record, (list, tuple)):
+                    row = record
+            else:
+                    row = getattr(record, "values", None)
+            
+            if row is None:
+                continue
+
+            v = row[column]
+            if begin <= v <= end:
+                result.append(rid)
+    
         return result
-
-        if isinstance(records, dict):
-        items = records.items()
-        else:
-        items = enumerate(records)
-
-        for rid_key, record in items:
-        rid = getattr(record, "rid", rid_key)
-
-        if hasattr(record, "columns"):
-            row = record.columns
-        elif isinstance(record, (list, tuple)):
-                row = record
-        else:
-                row = getattr(record, "values", None)
-        
-        if row is None:
-            continue
-
-        v = row[column]
-        if begin <= v <= end:
-            result.append(rid)
- 
-    return result
 
 
     """
