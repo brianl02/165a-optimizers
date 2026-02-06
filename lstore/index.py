@@ -37,6 +37,8 @@ class Index:
         if value in idx:
             rids_set = idx[value]
             rids_set.discard(rid)
+            if rids_set == set():
+                rids_set = None
             idx[value] = rids_set
         else:
             return False
@@ -50,6 +52,8 @@ class Index:
 
     def locate(self, column, value):
         # check if index exists for that column
+        if self.indices[column] is None:
+            return None
         # get correct index for that column
         idx = self.indices[column]
         # input value as key for that index 

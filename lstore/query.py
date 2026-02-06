@@ -1,6 +1,9 @@
 from lstore import table
 from lstore.table import Table, Record
 from lstore.index import Index
+from itertools import count
+_rid_counter = count()
+
 
 
 class Query:
@@ -24,30 +27,32 @@ class Query:
     def delete(self, primary_key):
         # use index to get RID of base record
         
-            rids = self.table.index.locate(self.table.key, primary_key)
-            if not rids: 
-                return False
-                base_rid = rids[0]
+        rids = self.table.index.locate(self.table.key, primary_key)
+        if not rids: 
+            return False
+        base_rid = rids[0]
+        self.update(primary_key, *[None] * self.table.num_columns)
+        self.table.index.remove_from_index(self.table.key, primary_key, base_rid)
+        del self.table.page_directory[base_rid]
+        return True
+
+
+
         # call update with all columns set to None to insert tail record of all nulls
         # remove primary key from index, and any mapping from the old column values to RID in other indices
         # remove RID of base record from page directory
 
-        entry = self.table.page_directory[base_rid] # type: ignore
-        pr = self.table.page.range_directory[entry.page_range_number]
-        if base_rid in page.range.base_records:
-            del page.range.base_records[base_rid]
+        # entry = self.table.page_directory[base_rid] # type: ignore
+        # pr = self.table.page.range_directory[entry.page_range_number]
+        # if base_rid in page.range.base_records:
+        #     del page.range.base_records[base_rid]
 
-        if base_rid in self.table.page_directory:
-            del self.table.page_directory[base_rid]
+        # if base_rid in self.table.page_directory:
+        #     del self.table.page_directory[base_rid]
 
-            return True
-        
+        #     return True
+        # return False
 
-    
-      return False
-
-
-        pass
     
     
     """
@@ -58,13 +63,13 @@ class Query:
     def insert(self, *columns):
     
         # check if col if is correct number
-        if len(column) != self.table.num_columns:
+        if len(columns) != self.table.num_columns:
             return False
 
         # use the key to find a pageRange
-        primary_key = column[self.table.key]
+        primary_key = columns[self.table.key]
         # calculate range number using primary key
-        page_range_number = primary_key // PAGE_RANGE_SIZE
+        page_range_number = primary_key // self.table.NUM_RECORDS_PER_RANGE
 
         # if there isn't page number then we build a new page
         if page_range_number not in self.table.page_range_directory:
@@ -73,46 +78,49 @@ class Query:
         page_range = self.table.page_range_directory[page_range_number]
 
         # allocate  RID
-        if len(self.table.page_directory)  == 0:
-            rid = 0
-        else:
-            rid = max(self.table.page_directory.keys()) +1
+        # if len(self.table.page_directory)  == 0:
+        #     rid = 0
+        # else:
+        #     rid = max(self.table.page_directory.keys()) +1
+        rid = next(_rid_counter)
 
-        
         # schema for base record
         schema_encoding = '0' * self.table.num_columns
                     
         # create new record object with new RID
         # call add record in table class
         record = Record(rid, primary_key, list(columns))
-        page_range.add_record(record, is_base = True)
 
-        # construct variable that holds all columns including metadata
-        # track locations
-        total_cols = self.table.num_columns + 3
-        data_locations = [None] * total_cols
+        all_columns = [rid, None, schema_encoding] + list(columns)
 
-        # hidding col : RID（record ID, '0' base record）
-        # /Indirection(point to tail record, '1' tail record)
-        #/Schema(which col have been updated?)
-        data_locations[RID_COLUMN] = self._append_value(page_range, RID_COLUMN,rid,is_base=True)
-        data_locations[INDIRECTION_COLUMN] = self._append_value(page_range,INDIRECTION_COLUMN, 0, is_base = True)
-        data_locations[SCHEMA_ENCODING_COLUMN] = self._append_value(page_range,SCHEMA_ENCODING_COLUMN,schema_encoding, is_base = True)
+        self.table.add_record(page_range_number, True, *all_columns, record)
 
-        # starting from index 3
-        # 0 - RID
-        # 1 - Indirection point to tail record
-        # 2 - Schema encoding (check which one have been updated)
-        # 3,4,5 - User data
-        for i, val in enumerate(columns):
-            base_col_idx = i + 3
-            data_locations[base_col_idx] = self._append_value(page_range, base_col_idx,val, is_base = True)
+        # # construct variable that holds all columns including metadata
+        # # track locations
+        # total_cols = self.table.num_columns + 3
+        # data_locations = [None] * total_cols
 
-        # updating page directory
-        self.table.page_directory[rid] = PageDirectoryEntry(
-            page_range_number = page_range_number,
-            data_locations = data_locations
-        )
+        # # hidding col : RID（record ID, '0' base record）
+        # # /Indirection(point to tail record, '1' tail record)
+        # #/Schema(which col have been updated?)
+        # data_locations[RID_COLUMN] = self._append_value(page_range, RID_COLUMN,rid,is_base=True)
+        # data_locations[INDIRECTION_COLUMN] = self._append_value(page_range,INDIRECTION_COLUMN, 0, is_base = True)
+        # data_locations[SCHEMA_ENCODING_COLUMN] = self._append_value(page_range,SCHEMA_ENCODING_COLUMN,schema_encoding, is_base = True)
+
+        # # starting from index 3
+        # # 0 - RID
+        # # 1 - Indirection point to tail record
+        # # 2 - Schema encoding (check which one have been updated)
+        # # 3,4,5 - User data
+        # for i, val in enumerate(columns):
+        #     base_col_idx = i + 3
+        #     data_locations[base_col_idx] = self._append_value(page_range, base_col_idx,val, is_base = True)
+
+        # # updating page directory
+        # self.table.page_directory[rid] = PageDirectoryEntry(
+        #     page_range_number = page_range_number,
+        #     data_locations = data_locations
+        # )
 
         return True
 
@@ -184,8 +192,8 @@ class Query:
 
     #schema encoding
 
-schema = ""
-for v in columns:
+    schema = ""
+    for v in columns:
         if v is None:
             schema += "0"
         else:
@@ -288,4 +296,3 @@ for v in columns:
             u = self.update(key, *updated_columns)
             return u
         return False
-=
