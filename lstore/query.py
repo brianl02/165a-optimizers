@@ -1,4 +1,5 @@
 from lstore import table
+from lstore import page
 from lstore.table import Table, Record
 from lstore.index import Index
 from itertools import count
@@ -58,7 +59,7 @@ class Query:
         # use the key to find a pageRange
         primary_key = columns[self.table.key]
         # calculate range number using primary key
-        page_range_number = primary_key // self.table.NUM_RECORDS_PER_RANGE
+        page_range_number = primary_key // table.NUM_RECORDS_PER_RANGE
 
         # if there isn't page number then we build a new page
         if page_range_number not in self.table.page_range_directory:
@@ -76,7 +77,7 @@ class Query:
         # call add record in table class
         record = Record(rid, primary_key, list(columns))
         # construct variable that holds all columns including metadata
-        all_columns = [rid, None, schema_encoding] + list(columns)
+        all_columns = [rid, None, int(schema_encoding, 2)] + list(columns)
 
         self.table.add_record(page_range_number, True, *all_columns, record)
         
@@ -157,13 +158,13 @@ class Query:
         base_page_range_number = base_page_directory_entry.page_range_number
         base_page_range = self.table.page_range_directory[base_page_range_number]
         base_data_locations = base_page_directory_entry.data_locations
-        base_indirection_page_number = base_data_locations[self.table.INDIRECTION_COLUMN].page_number
-        base_indirection_page = base_page_range.base_pages[self.table.INDIRECTION_COLUMN][base_indirection_page_number]
-        base_indirection_offset = base_data_locations[self.table.INDIRECTION_COLUMN].offset
-        base_schema_page_number = base_data_locations[self.table.SCHEMA_ENCODING_COLUMN].page_number
-        base_schema_page = base_page_range.base_pages[self.table.SCHEMA_ENCODING_COLUMN][base_schema_page_number]
-        base_schema_offset = base_data_locations[self.table.SCHEMA_ENCODING_COLUMN].offset
-        base_schema = base_schema_page.read(base_schema_offset // table.COLUMN_ENTRY_SIZE)
+        base_indirection_page_number = base_data_locations[table.INDIRECTION_COLUMN].page_number
+        base_indirection_page = base_page_range.base_pages[table.INDIRECTION_COLUMN][base_indirection_page_number]
+        base_indirection_offset = base_data_locations[table.INDIRECTION_COLUMN].offset
+        base_schema_page_number = base_data_locations[table.SCHEMA_ENCODING_COLUMN].page_number
+        base_schema_page = base_page_range.base_pages[table.SCHEMA_ENCODING_COLUMN][base_schema_page_number]
+        base_schema_offset = base_data_locations[table.SCHEMA_ENCODING_COLUMN].offset
+        base_schema = format(base_schema_page.read(base_schema_offset // page.COLUMN_ENTRY_SIZE), f"0{self.table.num_columns}b")
 
         #schema encoding
 
@@ -183,20 +184,20 @@ class Query:
                     base_page_number = base_data_locations[i + 3].page_number
                     base_page = base_page_range.base_pages[i + 3][base_page_number]
                     base_offset = base_data_locations[i + 3].offset
-                    column_value = base_page.read(base_offset // table.COLUMN_ENTRY_SIZE)
+                    column_value = base_page.read(base_offset // page.COLUMN_ENTRY_SIZE)
                     copy_columns[i] = column_value
                 else:
                     copy_columns[i] = None
             copy_tail_record = Record(next(_rid_counter), primary_key, copy_columns)
-            copy_all_columns = [copy_tail_record.rid, base_rid, schema] + copy_columns
+            copy_all_columns = [copy_tail_record.rid, base_rid, int(schema, 2)] + copy_columns
             self.table.add_record(base_page_range_number, False, *copy_all_columns, record=copy_tail_record)
         
         tail_record = Record(next(_rid_counter), primary_key, list(columns))
-        all_columns = [tail_record.rid, base_rid, schema] + list(columns)
+        all_columns = [tail_record.rid, base_rid, int(schema, 2)] + list(columns)
         self.table.add_record(base_page_range_number, False, *all_columns, record=tail_record)
 
         base_indirection_page.write(tail_record.rid, base_indirection_offset)
-        base_schema_page.write(new_base_schema, base_schema_offset)
+        base_schema_page.write(int(new_base_schema, 2), base_schema_offset)
 
         current_columns = self.table.construct_full_record(base_rid)
         previous_columns = self.table.construct_full_record(base_rid, 1)
@@ -224,9 +225,10 @@ class Query:
         sum = 0
         has_records = False
         for key in range(start_range, end_range + 1):
-            rid = self.table.index.locate(0, key)
-            if rid is None:
+            rids = self.table.index.locate(0, key)
+            if rids is None:
                 continue
+            rid = rids[0]
             has_records = True
             column_value = self.table.get_column_value(rid, aggregate_column_index)
             if column_value is None:
@@ -249,9 +251,10 @@ class Query:
         sum = 0
         has_records = False
         for key in range(start_range, end_range + 1):
-            rid = self.table.index.locate(0, key)
-            if rid is None:
+            rids = self.table.index.locate(0, key)
+            if rids is None:
                 continue
+            rid = rids[0]
             has_records = True
             column_value = self.table.get_column_value(rid, aggregate_column_index, relative_version * -1)
             if column_value is None:

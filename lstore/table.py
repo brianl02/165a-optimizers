@@ -84,7 +84,7 @@ class Table:
         else:
             pages = page_range.tail_pages
 
-        new_record_data_locations = []
+        new_record_data_locations = [None] * (self.num_columns + 3)
 
         for column_number in range(self.num_columns + 3):
 
@@ -97,7 +97,7 @@ class Table:
             last_record_offset = pages[column_number][-1].current_offset
 
             if last_page.has_capacity():
-                new_page_coord = PageCoord(last_record_page_number, last_record_offset + page.COLUMN_ENTRY_SIZE)
+                new_page_coord = PageCoord(last_record_page_number, last_record_offset)
 
             else:
                 page_range.add_page(is_base, column_number)
@@ -146,7 +146,8 @@ class Table:
             indirection_rid_page_number = current_data_locations[INDIRECTION_COLUMN].page_number
             indirection_rid_offset = current_data_locations[INDIRECTION_COLUMN].offset
 
-            indirection_rid_page = current_page_range.base_pages[INDIRECTION_COLUMN][indirection_rid_page_number]
+            pages = current_page_range.base_pages if current_is_base else current_page_range.tail_pages
+            indirection_rid_page = pages[INDIRECTION_COLUMN][indirection_rid_page_number]
             indirection_rid = indirection_rid_page.read(indirection_rid_offset // page.COLUMN_ENTRY_SIZE)
 
             if version_num >= relative_version:

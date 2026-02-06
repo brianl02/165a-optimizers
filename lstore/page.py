@@ -12,21 +12,26 @@ class Page:
     def has_capacity(self):
         return self.num_records < MAX_RECORDS_PER_PAGE
 
-    def write(self, value):
-        if not self.has_capacity():
-            return False
-        offset = self.num_records * COLUMN_ENTRY_SIZE
-        value_in_bytes = value.to_bytes(8, byteorder='little')
-        self.data[offset : offset + COLUMN_ENTRY_SIZE] = value_in_bytes
-        self.num_records += 1
-        self.current_offset += COLUMN_ENTRY_SIZE
-        return True
+    # def write(self, value):
+    #     if not self.has_capacity():
+    #         return False
+    #     offset = self.num_records * COLUMN_ENTRY_SIZE
+    #     value_in_bytes = value.to_bytes(8, byteorder='little')
+    #     self.data[offset : offset + COLUMN_ENTRY_SIZE] = value_in_bytes
+    #     self.num_records += 1
+    #     self.current_offset += COLUMN_ENTRY_SIZE
+    #     return True
     
-    def write(self, value, offset):
+    def write(self, value, offset=None):
+        if value is None:
+            return True
+        if offset is None:
+            offset = self.current_offset
         if offset + COLUMN_ENTRY_SIZE > PAGE_SIZE:
             return False
         value_in_bytes = value.to_bytes(8, byteorder='little')
         self.data[offset : offset + COLUMN_ENTRY_SIZE] = value_in_bytes
+        self.current_offset += COLUMN_ENTRY_SIZE
         return True
     
     def read(self, index):

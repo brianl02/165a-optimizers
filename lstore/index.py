@@ -44,7 +44,7 @@ class Index:
         if self.indices[column] is None:
             return None
         idx = self.indices[column]
-        rids = idx[value]
+        rids = idx.get(value, set())
         return list(rids)
 
 
@@ -53,7 +53,7 @@ class Index:
     """
 
     def locate_range(self, begin, end, column):
-        all_rids = ()
+        all_rids = set()
         for i in range(begin, end + 1):
             all_rids = all_rids.union(self.locate(column, i))
         return list(all_rids)
