@@ -36,67 +36,65 @@ class Query:
     # Returns False if insert fails for whatever reason
     """
     def insert(self, *columns):
-        try:
-            # check if col if is correct number
-            if len(column) != self.table.num_columns:
-                return False
-
-            # use the key to find a pageRange
-            primary_key = column[self.table.key]
-            # calculate range number using primary key
-            page_range_number = primary_key // PAGE_RANGE_SIZE
-
-            # if there isn't page number then we build a new page
-            if page_range_number not in self.table.page_range_directory:
-                self.table.add_page_range(page_range_number)
-
-            page_range = self.table.page_range_directory[page_range_number]
-
-            # allocate  RID
-            if len(self.table.page_directory)  == 0:
-                rid = 0
-            else:
-                rid = max(self.table.page_directory.keys()) +1
-
-            
-            # schema for base record
-            schema_encoding = '0' * self.table.num_columns
-                     
-            # create new record object with new RID
-            # call add record in table class
-            record = Record(rid, primary_key, list(columns))
-            page_range.add_record(record, is_base = True)
-
-            # construct variable that holds all columns including metadata
-            # track locations
-            total_cols = self.table.num_columns + 3
-            data_locations = [None] * total_cols
-
-            # hidding col : RID（record ID, '0' base record）
-            # /Indirection(point to tail record, '1' tail record)
-            #/Schema(which col have been updated?)
-            data_locations[RID_COLUMN] = self._append_value(page_range, RID_COLUMN,rid,is_base=True)
-            data_locations[INDIRECTION_COLUMN] = self._append_value(page_range,INDIRECTION_COLUMN, 0, is_base = True)
-            data_locations[SCHEMA_ENCODING_COLUMN] = self._append_value(page_range,SCHEMA_ENCODING_COLUMN,schema_encoding, is_base = True)
-
-            # starting from index 3
-            # 0 - RID
-            # 1 - Indirection point to tail record
-            # 2 - Schema encoding (check which one have been updated)
-            # 3,4,5 - User data
-            for i, val in enumerate(columns):
-                base_col_idx = i + 3
-                data_locations[base_col_idx] = self._append_value(page_range, base_col_idx,val, is_base = True)
-
-            # updating page directory
-            self.table.page_directory[rid] = PageDirectoryEntry(
-                page_range_number = page_range_number,
-                data_locations = data_locations
-            )
-
-            return True
-        except Exception:
+    
+        # check if col if is correct number
+        if len(column) != self.table.num_columns:
             return False
+
+        # use the key to find a pageRange
+        primary_key = column[self.table.key]
+        # calculate range number using primary key
+        page_range_number = primary_key // PAGE_RANGE_SIZE
+
+        # if there isn't page number then we build a new page
+        if page_range_number not in self.table.page_range_directory:
+            self.table.add_page_range(page_range_number)
+
+        page_range = self.table.page_range_directory[page_range_number]
+
+        # allocate  RID
+        if len(self.table.page_directory)  == 0:
+            rid = 0
+        else:
+            rid = max(self.table.page_directory.keys()) +1
+
+        
+        # schema for base record
+        schema_encoding = '0' * self.table.num_columns
+                    
+        # create new record object with new RID
+        # call add record in table class
+        record = Record(rid, primary_key, list(columns))
+        page_range.add_record(record, is_base = True)
+
+        # construct variable that holds all columns including metadata
+        # track locations
+        total_cols = self.table.num_columns + 3
+        data_locations = [None] * total_cols
+
+        # hidding col : RID（record ID, '0' base record）
+        # /Indirection(point to tail record, '1' tail record)
+        #/Schema(which col have been updated?)
+        data_locations[RID_COLUMN] = self._append_value(page_range, RID_COLUMN,rid,is_base=True)
+        data_locations[INDIRECTION_COLUMN] = self._append_value(page_range,INDIRECTION_COLUMN, 0, is_base = True)
+        data_locations[SCHEMA_ENCODING_COLUMN] = self._append_value(page_range,SCHEMA_ENCODING_COLUMN,schema_encoding, is_base = True)
+
+        # starting from index 3
+        # 0 - RID
+        # 1 - Indirection point to tail record
+        # 2 - Schema encoding (check which one have been updated)
+        # 3,4,5 - User data
+        for i, val in enumerate(columns):
+            base_col_idx = i + 3
+            data_locations[base_col_idx] = self._append_value(page_range, base_col_idx,val, is_base = True)
+
+        # updating page directory
+        self.table.page_directory[rid] = PageDirectoryEntry(
+            page_range_number = page_range_number,
+            data_locations = data_locations
+        )
+
+        return True
 
     
     """
