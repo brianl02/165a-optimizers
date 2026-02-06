@@ -134,7 +134,7 @@ class Table:
         columns = [None] * self.num_columns
         version_num = 0
 
-        while indirection_rid != base_rid or any(value is None for value in columns):
+        while (indirection_rid != base_rid and indirection_rid != None) or any(value is None for value in columns):
             current_page_directory_entry = self.page_directory[indirection_rid]
             current_page_range_number = current_page_directory_entry.page_range_number
             current_is_base = current_page_directory_entry.is_base
@@ -155,7 +155,7 @@ class Table:
                 columns = new_columns
             version_num += 1
         
-        if indirection_rid == base_rid:
+        if indirection_rid == base_rid or indirection_rid == None:
             base_record = base_page_range.get_record(is_base=True, rid=base_rid)
             base_columns = base_record.columns
             new_columns = [x if x is not None else y for x, y in zip(columns, base_columns)]
